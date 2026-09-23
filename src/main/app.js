@@ -15,6 +15,7 @@ import { MapEditor } from './mapeditor.js';
 import { EXAMPLES, STARTER } from './examples.js';
 import { renderManual } from './manual.js';
 import { DataPanel } from './datapanel.js';
+import { Layout } from './layout.js';
 import { Audio } from './audio.js';
 import { complete } from './apidata.js';
 import { defaultRobot, layoutRobot, deepClone, validateRobot, PORTS } from '../common/catalog.js';
@@ -118,6 +119,10 @@ class App {
     this.buildExamples();
     renderManual($('#pane-doc'));
     this.data = new DataPanel($('#pane-data'), this);
+    // bordas arrastáveis entre os painéis
+    this.layout = new Layout(() => this.layoutChanged());
+    // rodapé: data e hora (UTC) de abertura, como nos outros labs
+    $('#footTs').textContent = new Date().toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
     // topo
     $('#bRun').onclick = () => this.runCurrent();
     $('#bStop').onclick = () => this.stopProgram();
@@ -591,6 +596,15 @@ class App {
     if (this.mapEd && this.mapEd.active) this.mapEd.key(e);
   }
 
+  // painéis mudaram de tamanho: redesenha o que é canvas 2D visível
+  layoutChanged() {
+    cancelAnimationFrame(this._lcRaf);
+    this._lcRaf = requestAnimationFrame(() => {
+      if (this.builder && $('#pane-robot').classList.contains('on')) this.builder.draw();
+      if (this.data && $('#pane-data').classList.contains('on')) this.data.resize();
+    });
+  }
+
   // ------------------------------------------------------------ menu
   async menu() {
     const st = this.state;
@@ -615,7 +629,9 @@ class App {
         el('button', { class: 'btn sm warn', onclick: async () => {
           const v = await modal('Recomeçar do zero', 'Apaga robô, mesa, missões e os 20 programas deste navegador.', [{ label: 'Cancelar', value: null }, { label: 'Apagar tudo', cls: 'bad', value: 'ok' }]);
           if (v === 'ok') { try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* */ } location.reload(); }
-        } }, 'Recomeçar')),
+        } }, 'Recomeçar'),
+        el('button', { class: 'btn sm', title: 'Volta as bordas dos painéis ao tamanho original', onclick: () => { this.layout.resetAll(); toast('Tamanho dos painéis restaurado.', 'ok'); } }, '⊞ Restaurar painéis')),
+      el('p', { class: 'hint', style: { marginTop: '8px' } }, 'Dica: arraste as bordas entre os painéis para redimensionar (duplo clique volta ao padrão). A borda embaixo da área de trabalho aumenta a altura total; use a barra de rolagem da direita.'),
       el('p', { class: 'hint', style: { marginTop: '12px' } }, 'MyFLL.lab é um projeto educacional independente, sem ligação com a LEGO ou a FIRST. A API segue a documentação pública do Python do hub SPIKE Prime e do Pybricks.'));
     const v = await modal('Projeto e configurações', body, [{ label: 'Fechar', value: null }, { label: 'Aplicar', cls: 'pri', value: 'ok' }]);
     if (v === 'ok') {

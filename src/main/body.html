@@ -21,7 +21,14 @@
     <button class="btn sm" id="bMenu" title="Salvar, abrir e configurações">☰</button>
   </div>
 </header>
-<main class="grid">
+<div class="byline" id="byline">
+  <span>Author <a href="https://rmayormartins.github.io" target="_blank" rel="noopener">Ramon Mayor Martins, Ph.D.</a></span>
+  <span class="sep">//</span>
+  <a class="gh" href="https://github.com/rmayormartins" target="_blank" rel="noopener" aria-label="GitHub @rmayormartins"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>@rmayormartins</a>
+  <span class="sep">//</span>
+  <span><a href="https://www.ifsc.edu.br/web/campus-sao-jose" target="_blank" rel="noopener">IFSC SJ</a> <span class="dash">-</span> <a href="https://wiki.sj.ifsc.edu.br/index.php/P%C3%A1gina_principal" target="_blank" rel="noopener">Area de Telecomunicacoes</a></span>
+</div>
+<main class="grid" id="work">
   <aside class="left panel" id="left">
     <nav class="tabs" role="tablist">
       <button class="tab on" data-tab="robot" role="tab">ROBÔ</button>
@@ -32,6 +39,7 @@
     <div class="pane scroll" id="pane-map"></div>
     <div class="pane scroll" id="pane-mis"></div>
   </aside>
+  <div class="rz v" data-k="lw" data-dir="1" role="separator" aria-orientation="vertical" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
   <section class="center">
     <div class="viewport" id="vp" tabindex="0" aria-label="Vista 3D da mesa">
       <canvas id="view"></canvas>
@@ -43,8 +51,10 @@
       <div class="tooltip3d" id="tip3d"></div>
       <div class="boot" id="boot"><div class="bx"><h2>MyFLL<i>.lab</i></h2><p id="bootMsg">montando a mesa…</p></div></div>
     </div>
+    <div class="rz h" data-k="dh" data-dir="-1" role="separator" aria-orientation="horizontal" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
     <div class="dock">
       <div class="hubpanel" id="hubpanel"></div>
+      <div class="rz v" data-k="hw" data-dir="1" role="separator" aria-orientation="vertical" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
       <div class="console">
         <div class="conhead"><b>CONSOLE</b><span class="mute mono" id="conInfo">saída do print() e REPL do hub</span><span style="flex:1"></span><button class="tg" id="bConClear">limpar</button></div>
         <div class="conbody" id="conOut" role="log" aria-live="polite"></div>
@@ -52,6 +62,7 @@
       </div>
     </div>
   </section>
+  <div class="rz v" data-k="rw" data-dir="-1" role="separator" aria-orientation="vertical" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
   <aside class="right panel" id="right">
     <nav class="tabs" role="tablist">
       <button class="tab on" data-tab="code" role="tab">CÓDIGO</button>
@@ -65,5 +76,10 @@
     <div class="pane scroll" id="pane-doc"></div>
   </aside>
 </main>
+<div class="rz h wk" data-k="wh" data-dir="1" role="separator" aria-orientation="horizontal" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
+<footer class="foot">
+  <div class="author">MyFLL.lab v0.1 <span class="sep">//</span> 2026 <span class="sep">//</span> Prof. Ramon Mayor Martins <span class="sep">//</span> <a href="mailto:ramon.mayor@ifsc.edu.br">ramon.mayor@ifsc.edu.br</a></div>
+  <div class="ts" id="footTs"></div>
+</footer>
 <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
 <input type="file" id="fileIn" hidden>

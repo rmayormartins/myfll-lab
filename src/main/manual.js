@@ -115,6 +115,7 @@ ${apiTable(PB_API)}
 <tr><td><span class="kbd">Ctrl</span>+<span class="kbd">Espaço</span></td><td>sugestões da API</td></tr>
 <tr><td>MESA: <span class="kbd">V L Z C B T O X</span></td><td>selecionar, linha, zona, círculo, pincel, texto, objeto, borracha</td></tr>
 <tr><td>MESA: <span class="kbd">Ctrl</span>+<span class="kbd">Z</span></td><td>desfazer</td></tr>
+<tr><td>bordas entre os painéis</td><td>arraste para redimensionar (ou foque e use as setas); duplo clique volta ao padrão. A borda de baixo aumenta a altura da área de trabalho e a página rola.</td></tr>
 </table>
 
 <h4>Publicar no GitHub Pages</h4>

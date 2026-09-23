@@ -1,6 +1,6 @@
 {
   "name": "myfll-lab",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "MyFLL.lab: simulador de robô estilo FIRST LEGO League com Python do hub SPIKE Prime (SPIKE 3 e Pybricks), em um único arquivo HTML.",
   "private": true,
   "type": "module",

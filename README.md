@@ -14,6 +14,8 @@ O código que você escreve aqui usa **os mesmos módulos, nomes e unidades** do
 4. **MISSÕES**: gere uma temporada (tema + semente) ou crie missões à mão. Inicie uma **partida** com cronômetro, fichas de precisão e placar.
 5. **CÓDIGO**: escreva em SPIKE 3 ou Pybricks e clique **▶ EXECUTAR**. Há 20 posições de programa, como no hub. A aba **EXEMPLOS** tem 20 programas prontos (seguidor de linha, PID, giroscópio, menu de saídas, multitarefa e outros).
 
+A tela se ajusta ao seu jeito: arraste as bordas entre os painéis (robô/mesa, vista 3D, hub, console e código) para redimensionar, e a borda de baixo para deixar a área de trabalho mais alta; a página tem rolagem vertical. Duplo clique numa borda volta ao tamanho padrão, e o menu ☰ restaura tudo.
+
 O hub virtual funciona como o real: **◀ ▶** trocam o programa, o botão central executa e para, a matriz 5x5 mostra imagens e textos, e o console embaixo aceita comandos Python soltos (REPL).
 
 ## O que o simulador reproduz
@@ -53,6 +55,12 @@ Estrutura:
 | `src/py/` | módulos Python simulados: `spike.py` (SPIKE 3), `pybricks.py` e `rt.py` (agendador e transformação do código) |
 | `src/common/` | catálogo de peças e modelos de robô, objetos da mesa, fontes da matriz |
 | `src/main/` | interface: vista 3D, montador, editor de mapa, missões, editor de código, exemplos, manual |
+
+## Autor
+
+[Ramon Mayor Martins, Ph.D.](https://rmayormartins.github.io) // [@rmayormartins](https://github.com/rmayormartins) // [IFSC SJ](https://www.ifsc.edu.br/web/campus-sao-jose) - [Area de Telecomunicacoes](https://wiki.sj.ifsc.edu.br/index.php/P%C3%A1gina_principal)
+
+MyFLL.lab v0.1 // 2026 // ramon.mayor@ifsc.edu.br
 
 ## Créditos
 
