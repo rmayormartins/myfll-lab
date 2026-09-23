@@ -1,0 +1,69 @@
+<header class="top">
+  <div class="brand">
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0a1016" stroke="#243241"/><rect x="6" y="5" width="20" height="22" rx="4" fill="#ffcf33"/><rect x="9" y="8" width="14" height="12" rx="2" fill="#101922"/><circle cx="12" cy="11" r="1.3" fill="#37d5ff"/><circle cx="16" cy="14" r="1.3" fill="#37d5ff"/><circle cx="20" cy="17" r="1.3" fill="#37d5ff"/><circle cx="16" cy="23.5" r="2" fill="#101922"/></svg>
+    <div><h1>MyFLL<span>.lab</span></h1><small>simulador de robôs · Python do hub SPIKE Prime</small></div>
+  </div>
+  <div class="chips" id="chips">
+    <div class="chip warn" id="cPy"><em>Python</em><b>carregando</b></div>
+    <div class="chip" id="cProg"><em>Programa</em><b>parado</b></div>
+    <div class="chip info" id="cTime"><em>Tempo do hub</em><b>0,0 s</b></div>
+    <div class="chip ok" id="cBatt"><em>Bateria</em><b>95%</b></div>
+    <div class="chip yel" id="cScore"><em>Pontos</em><b>0</b></div>
+    <div class="chip opt" id="cRT"><em>Tempo real</em><b>100%</b></div>
+  </div>
+  <div class="simctl">
+    <button class="btn run" id="bRun" title="Envia o programa para o hub e executa (Ctrl+Enter)">▶ EXECUTAR</button>
+    <button class="btn stop" id="bStop" title="Para o programa (Esc)">■ PARAR</button>
+    <select class="btn sm" id="sSpeed" title="Velocidade da simulação">
+      <option value="0">pausa</option><option value="0.25">0,25×</option><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="10">10×</option>
+    </select>
+    <button class="btn sm" id="bResetField" title="Recoloca robô e peças na posição inicial (R)">↺ mesa</button>
+    <button class="btn sm" id="bMenu" title="Salvar, abrir e configurações">☰</button>
+  </div>
+</header>
+<main class="grid">
+  <aside class="left panel" id="left">
+    <nav class="tabs" role="tablist">
+      <button class="tab on" data-tab="robot" role="tab">ROBÔ</button>
+      <button class="tab" data-tab="map" role="tab">MESA</button>
+      <button class="tab" data-tab="mis" role="tab">MISSÕES</button>
+    </nav>
+    <div class="pane on scroll" id="pane-robot"></div>
+    <div class="pane scroll" id="pane-map"></div>
+    <div class="pane scroll" id="pane-mis"></div>
+  </aside>
+  <section class="center">
+    <div class="viewport" id="vp" tabindex="0" aria-label="Vista 3D da mesa">
+      <canvas id="view"></canvas>
+      <div class="hud tl"><div class="hudbox" id="hudPose"></div></div>
+      <div class="hud tr" id="hudTR"></div>
+      <div class="hud bl"><div class="hudbox" id="hudTool">arraste o robô para posicionar · <span class="kbd">Q</span>/<span class="kbd">E</span> giram</div></div>
+      <div class="hud tc" id="matchHud"></div>
+      <div class="toasts" id="toasts"></div>
+      <div class="tooltip3d" id="tip3d"></div>
+      <div class="boot" id="boot"><div class="bx"><h2>MyFLL<i>.lab</i></h2><p id="bootMsg">montando a mesa…</p></div></div>
+    </div>
+    <div class="dock">
+      <div class="hubpanel" id="hubpanel"></div>
+      <div class="console">
+        <div class="conhead"><b>CONSOLE</b><span class="mute mono" id="conInfo">saída do print() e REPL do hub</span><span style="flex:1"></span><button class="tg" id="bConClear">limpar</button></div>
+        <div class="conbody" id="conOut" role="log" aria-live="polite"></div>
+        <div class="conin"><span>&gt;&gt;&gt;</span><input id="conIn" spellcheck="false" autocomplete="off" placeholder="digite Python e Enter (ex.: from hub import port)"></div>
+      </div>
+    </div>
+  </section>
+  <aside class="right panel" id="right">
+    <nav class="tabs" role="tablist">
+      <button class="tab on" data-tab="code" role="tab">CÓDIGO</button>
+      <button class="tab" data-tab="ex" role="tab">EXEMPLOS</button>
+      <button class="tab" data-tab="data" role="tab">DADOS</button>
+      <button class="tab" data-tab="doc" role="tab">MANUAL</button>
+    </nav>
+    <div class="pane on" id="pane-code"></div>
+    <div class="pane scroll" id="pane-ex"></div>
+    <div class="pane scroll" id="pane-data"></div>
+    <div class="pane scroll" id="pane-doc"></div>
+  </aside>
+</main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+<input type="file" id="fileIn" hidden>
