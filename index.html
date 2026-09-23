@@ -22,8 +22,14 @@
   --r:6px;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:13px;-webkit-font-smoothing:antialiased}
-body{overflow:hidden}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:13px;-webkit-font-smoothing:antialiased}
+/* rolagem da página inteira (barra sempre visível à direita) */
+html{height:100%;overflow-y:scroll;scrollbar-color:#2c3d4f #070b10}
+body{min-height:100%}
+html::-webkit-scrollbar{width:13px}
+html::-webkit-scrollbar-track{background:#070b10;border-left:1px solid var(--line)}
+html::-webkit-scrollbar-thumb{background:#223040;border:3px solid #070b10;border-radius:8px;min-height:40px}
+html::-webkit-scrollbar-thumb:hover{background:#34506a}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
@@ -31,7 +37,7 @@ button{cursor:pointer}
 .mute{color:var(--mute)}
 .hidden{display:none!important}
 /* ---------------------------------------------------------------- topo */
-.top{height:54px;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#081018,#05080c)}
+.top{position:sticky;top:0;z-index:15;height:54px;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#081018,#05080c)}
 .brand{display:flex;align-items:center;gap:10px;min-width:236px}
 .brand svg{flex:none}
 .brand h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.06em}
@@ -57,11 +63,39 @@ button{cursor:pointer}
 .btn.run:hover{filter:brightness(1.15)}
 .btn.stop{border:1px solid #8a1b33;background:linear-gradient(180deg,#3d0f1a,#260a11);color:#ffc9d3;font-weight:700;letter-spacing:.1em;padding:8px 14px}
 select.btn{padding:5px 6px}
+/* ---------------------------------------------------------------- assinatura e rodapé */
+.byline{height:30px;display:flex;align-items:center;gap:6px 13px;flex-wrap:wrap;padding:0 14px 0 54px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(15,20,29,.6),transparent);font-family:var(--mono);font-size:11px;color:var(--mute);letter-spacing:.3px}
+.byline a{color:var(--ink2);text-decoration:none;transition:color .14s;display:inline-flex;align-items:center;gap:5px}
+.byline a:hover{color:var(--yellow)}
+.byline .sep{color:#34475a}
+.byline .dash{color:var(--mute)}
+.byline svg{width:13px;height:13px;fill:currentColor}
+.foot{padding:6px 18px;background:linear-gradient(180deg,rgba(10,14,20,.7),rgba(10,14,20,.95));border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;color:var(--ink2);display:flex;align-items:center;justify-content:space-between;gap:6px 14px;flex-wrap:wrap}
+.foot .author{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.foot .author a{color:var(--yellow);text-decoration:none}
+.foot .author a:hover{text-decoration:underline}
+.foot .sep{color:#34475a}
+.foot .ts{color:var(--mute)}
+/* ---------------------------------------------------------------- divisórias arrastáveis */
+.rz{position:relative;background:#070b10;z-index:3;touch-action:none;outline:none;flex:none}
+.rz.v{cursor:col-resize;width:6px}
+.rz.h{cursor:row-resize;height:6px}
+.rz::before{content:'';position:absolute;background:var(--line);transition:background .12s,box-shadow .12s}
+.rz.v::before{top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%)}
+.rz.h::before{left:0;right:0;top:50%;height:1px;transform:translateY(-50%)}
+.rz::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.55;transition:opacity .12s;background:radial-gradient(circle,#6b7d8f 1.1px,transparent 1.6px) 0 0/6px 6px}
+.rz.v::after{width:6px;height:18px}
+.rz.h::after{width:18px;height:6px}
+.rz:hover::before,.rz.drag::before,.rz:focus-visible::before{background:var(--cyan);box-shadow:0 0 8px rgba(55,213,255,.55)}
+.rz.v:hover::before,.rz.v.drag::before,.rz.v:focus-visible::before{width:2px}
+.rz.h:hover::before,.rz.h.drag::before,.rz.h:focus-visible::before{height:2px}
+.rz:hover::after,.rz.drag::after,.rz:focus-visible::after{opacity:1;background-image:radial-gradient(circle,var(--cyan) 1.1px,transparent 1.6px)}
+.rz.wk{width:100%}
+body.rz-col,body.rz-col *{cursor:col-resize!important;user-select:none!important}
+body.rz-row,body.rz-row *{cursor:row-resize!important;user-select:none!important}
 /* ---------------------------------------------------------------- grade */
-.grid{display:grid;grid-template-columns:300px minmax(0,1fr) 470px;height:calc(100% - 54px)}
+.grid{display:grid;grid-template-columns:var(--lw,300px) 6px minmax(0,1fr) 6px var(--rw,470px);height:var(--wh,calc(100vh - 90px));min-height:460px}
 .panel{background:var(--panel);display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.left{border-right:1px solid var(--line)}
-.right{border-left:1px solid var(--line)}
 .scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#223040 transparent}
 .sec{border-bottom:1px solid var(--line);padding:10px 12px}
 .sec h2{margin:0 0 8px;font-size:10.5px;letter-spacing:.18em;color:var(--ink2);font-weight:600;display:flex;align-items:center;gap:8px;text-transform:uppercase}
@@ -138,17 +172,19 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
 .matchhud .tok i.lost{background:#223040}
 .tooltip3d{position:absolute;pointer-events:none;padding:4px 8px;background:rgba(5,8,12,.92);border:1px solid var(--line2);border-radius:5px;font-family:var(--mono);font-size:11px;color:var(--ink2);white-space:nowrap;z-index:4;display:none}
 /* dock inferior */
-.dock{height:236px;border-top:1px solid var(--line);display:grid;grid-template-columns:462px minmax(0,1fr);background:#070b10;flex:none}
-.console{display:flex;flex-direction:column;min-width:0;border-left:1px solid var(--line)}
+.dock{height:var(--dh,236px);display:grid;grid-template-columns:var(--hw,462px) 6px minmax(0,1fr);background:#070b10;flex:none;min-height:0}
+.console{display:flex;flex-direction:column;min-width:0;min-height:0}
 .conhead{display:flex;align-items:center;gap:6px;padding:5px 10px;border-bottom:1px solid var(--line)}
 .conhead b{font-size:10.5px;letter-spacing:.18em;color:var(--ink2);font-weight:600;margin-right:6px}
+.conhead #conInfo{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.conhead .tg{flex:none}
 .conbody{flex:1;overflow-y:auto;padding:4px 10px;font-family:var(--mono);font-size:12px;line-height:1.5;scrollbar-width:thin;scrollbar-color:#223040 transparent;white-space:pre-wrap;word-break:break-word}
 .conbody .e{color:var(--rose)} .conbody .s{color:var(--mute)} .conbody .i{color:var(--cyan)} .conbody .ok{color:var(--green)}
 .conin{display:flex;align-items:center;gap:6px;border-top:1px solid var(--line);padding:4px 10px;font-family:var(--mono);font-size:12px}
 .conin span{color:var(--yellow)}
 .conin input{flex:1;background:transparent;border:0;outline:none;font-family:var(--mono);font-size:12px;color:var(--ink)}
 /* ---------------------------------------------------------------- hub */
-.hubpanel{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 10px;align-items:start;overflow:hidden}
+.hubpanel{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 10px;align-items:start;overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:#223040 transparent}
 .hubdev{position:relative;width:132px;height:206px;border-radius:18px;background:linear-gradient(160deg,#ffe066,#f5c400 60%,#d9a800);box-shadow:inset 0 0 0 2px rgba(0,0,0,.18),0 8px 18px rgba(0,0,0,.45)}
 .hubdev.off{filter:grayscale(.7) brightness(.6)}
 .hubface{position:absolute;left:10px;right:10px;top:10px;bottom:10px;border-radius:12px;background:linear-gradient(180deg,#fbfbf7,#e9e8e0)}
@@ -165,8 +201,10 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
 .hubbt{position:absolute;right:18px;bottom:16px;width:9px;height:9px;border-radius:50%;background:var(--led2,#1e5bff);box-shadow:0 0 6px var(--led2,#1e5bff)}
 .hubports{position:absolute;inset:0;pointer-events:none}
 .hubports span{position:absolute;font-family:var(--mono);font-size:9px;color:#6b5a00;font-weight:700}
-.hubinfo{min-width:0;display:flex;flex-direction:column;gap:5px}
+.hubinfo{min-width:0;display:flex;flex-direction:column;gap:5px;container-type:inline-size}
 .portgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+@container (max-width:250px){.portgrid{grid-template-columns:repeat(2,1fr)}}
+@container (min-width:560px){.portgrid{grid-template-columns:repeat(6,1fr)}}
 .pcard{border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#0b1117;min-height:78px;font-family:var(--mono);font-size:10.5px;line-height:1.4;position:relative;overflow:hidden}
 .pcard .pl{position:absolute;right:5px;top:3px;color:var(--yellow);font-weight:700;font-size:11px}
 .pcard .pn{color:var(--mute);font-size:9px;letter-spacing:.02em;text-transform:uppercase;padding-right:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -276,14 +314,17 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
 .result{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-family:var(--mono);font-size:12px}
 .result .tot{color:var(--yellow);font-size:18px}
 /* responsivo */
-@media (max-width:1380px){.grid{grid-template-columns:276px minmax(0,1fr) 420px}.chip.opt{display:none}.dock{grid-template-columns:430px minmax(0,1fr)}}
+@media (max-width:1380px){.grid{grid-template-columns:var(--lw,276px) 6px minmax(0,1fr) 6px var(--rw,420px)}.chip.opt{display:none}.dock{grid-template-columns:var(--hw,430px) 6px minmax(0,1fr)}}
 @media (max-width:1100px){
-  body{overflow:auto}
-  .grid{display:flex;flex-direction:column;height:auto}
-  .center{order:1}.right{order:2;border-left:0;min-height:80vh}.left{order:3;border-right:0;min-height:70vh}
+  .top{position:static}
+  .byline{height:auto;padding:7px 12px}
+  .rz{display:none}
+  .grid{display:flex;flex-direction:column;height:auto;min-height:0}
+  .center{order:1}.right{order:2;min-height:80vh;border-top:1px solid var(--line)}.left{order:3;min-height:70vh;border-top:1px solid var(--line)}
   .viewport{height:56vh;flex:none}
-  .dock{height:auto;grid-template-columns:1fr}
-  .console{border-left:0;border-top:1px solid var(--line);height:220px}
+  .dock{height:auto;grid-template-columns:1fr;border-top:1px solid var(--line)}
+  .hubpanel{overflow:visible}
+  .console{border-top:1px solid var(--line);height:220px}
   .top{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}
   .chips{order:3;flex-basis:100%;overflow-x:auto}
   .brand{min-width:0}
@@ -296,6 +337,7 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
   .hubpanel{grid-template-columns:1fr;justify-items:center}
   .hubinfo{width:100%}
   .hud.tr .toggles{max-width:220px}
+  .hud.tl{display:none}
 }
 </style>
 </head>
@@ -323,7 +365,14 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
     <button class="btn sm" id="bMenu" title="Salvar, abrir e configurações">☰</button>
   </div>
 </header>
-<main class="grid">
+<div class="byline" id="byline">
+  <span>Author <a href="https://rmayormartins.github.io" target="_blank" rel="noopener">Ramon Mayor Martins, Ph.D.</a></span>
+  <span class="sep">//</span>
+  <a class="gh" href="https://github.com/rmayormartins" target="_blank" rel="noopener" aria-label="GitHub @rmayormartins"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>@rmayormartins</a>
+  <span class="sep">//</span>
+  <span><a href="https://www.ifsc.edu.br/web/campus-sao-jose" target="_blank" rel="noopener">IFSC SJ</a> <span class="dash">-</span> <a href="https://wiki.sj.ifsc.edu.br/index.php/P%C3%A1gina_principal" target="_blank" rel="noopener">Area de Telecomunicacoes</a></span>
+</div>
+<main class="grid" id="work">
   <aside class="left panel" id="left">
     <nav class="tabs" role="tablist">
       <button class="tab on" data-tab="robot" role="tab">ROBÔ</button>
@@ -334,6 +383,7 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
     <div class="pane scroll" id="pane-map"></div>
     <div class="pane scroll" id="pane-mis"></div>
   </aside>
+  <div class="rz v" data-k="lw" data-dir="1" role="separator" aria-orientation="vertical" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
   <section class="center">
     <div class="viewport" id="vp" tabindex="0" aria-label="Vista 3D da mesa">
       <canvas id="view"></canvas>
@@ -345,8 +395,10 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
       <div class="tooltip3d" id="tip3d"></div>
       <div class="boot" id="boot"><div class="bx"><h2>MyFLL<i>.lab</i></h2><p id="bootMsg">montando a mesa…</p></div></div>
     </div>
+    <div class="rz h" data-k="dh" data-dir="-1" role="separator" aria-orientation="horizontal" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
     <div class="dock">
       <div class="hubpanel" id="hubpanel"></div>
+      <div class="rz v" data-k="hw" data-dir="1" role="separator" aria-orientation="vertical" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
       <div class="console">
         <div class="conhead"><b>CONSOLE</b><span class="mute mono" id="conInfo">saída do print() e REPL do hub</span><span style="flex:1"></span><button class="tg" id="bConClear">limpar</button></div>
         <div class="conbody" id="conOut" role="log" aria-live="polite"></div>
@@ -354,6 +406,7 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
       </div>
     </div>
   </section>
+  <div class="rz v" data-k="rw" data-dir="-1" role="separator" aria-orientation="vertical" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
   <aside class="right panel" id="right">
     <nav class="tabs" role="tablist">
       <button class="tab on" data-tab="code" role="tab">CÓDIGO</button>
@@ -367,6 +420,11 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
     <div class="pane scroll" id="pane-doc"></div>
   </aside>
 </main>
+<div class="rz h wk" data-k="wh" data-dir="1" role="separator" aria-orientation="horizontal" tabindex="0" title="arraste para redimensionar · duplo clique restaura"></div>
+<footer class="foot">
+  <div class="author">MyFLL.lab v0.1 <span class="sep">//</span> 2026 <span class="sep">//</span> Prof. Ramon Mayor Martins <span class="sep">//</span> <a href="mailto:ramon.mayor@ifsc.edu.br">ramon.mayor@ifsc.edu.br</a></div>
+  <div class="ts" id="footTs"></div>
+</footer>
 <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
 <input type="file" id="fileIn" hidden>
 
@@ -9627,6 +9685,7 @@ ${apiTable(PB_API)}
 <tr><td><span class="kbd">Ctrl</span>+<span class="kbd">Espa\xE7o</span></td><td>sugest\xF5es da API</td></tr>
 <tr><td>MESA: <span class="kbd">V L Z C B T O X</span></td><td>selecionar, linha, zona, c\xEDrculo, pincel, texto, objeto, borracha</td></tr>
 <tr><td>MESA: <span class="kbd">Ctrl</span>+<span class="kbd">Z</span></td><td>desfazer</td></tr>
+<tr><td>bordas entre os pain\xE9is</td><td>arraste para redimensionar (ou foque e use as setas); duplo clique volta ao padr\xE3o. A borda de baixo aumenta a altura da \xE1rea de trabalho e a p\xE1gina rola.</td></tr>
 </table>
 
 <h4>Publicar no GitHub Pages</h4>
@@ -9933,6 +9992,166 @@ ${apiTable(PB_API)}
     }
   };
 
+  // src/main/layout.js
+  var KEY = "myfll.layout";
+  var LIM = { lw: [250, 680], rw: [320, 1200], dh: [110, 1200], hw: [330, 1400], wh: [460, 4e3] };
+  var CENTER_MIN = 360;
+  var CENTER_FIT = 556;
+  var VIEW_MIN = 160;
+  var CONSOLE_MIN = 220;
+  var GUT = 6;
+  var Layout = class {
+    constructor(onChange) {
+      this.onChange = onChange || (() => {
+      });
+      this.v = store.get(KEY, {}) || {};
+      this.root = document.documentElement;
+      this.work = $("#work");
+      this.mq = window.matchMedia("(max-width:1100px)");
+      for (const g of $$(".rz")) this.bind(g);
+      this.apply();
+      let raf = 0;
+      window.addEventListener("resize", () => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => this.apply());
+      });
+    }
+    // tamanho atual (medido na tela) de cada dimensão
+    measure(k) {
+      if (k === "lw") return $("#left").offsetWidth;
+      if (k === "rw") return $("#right").offsetWidth;
+      if (k === "dh") return $(".dock").offsetHeight;
+      if (k === "hw") return $("#hubpanel").offsetWidth;
+      if (k === "wh") return this.work.offsetHeight;
+      return 0;
+    }
+    // limites que dependem das outras dimensões e do tamanho da janela
+    bounds(k) {
+      const [lo, hi] = LIM[k];
+      const W = this.root.clientWidth;
+      let max = hi;
+      if (k === "lw") max = Math.min(hi, W - this.measure("rw") - CENTER_MIN - 2 * GUT);
+      else if (k === "rw") max = Math.min(hi, W - this.measure("lw") - CENTER_MIN - 2 * GUT);
+      else if (k === "dh") max = Math.min(hi, this.work.clientHeight - VIEW_MIN - GUT);
+      else if (k === "hw") max = Math.min(hi, $(".center").clientWidth - CONSOLE_MIN - GUT);
+      return [lo, Math.max(lo, max)];
+    }
+    set(k, px, save) {
+      const [lo, hi] = this.bounds(k);
+      const v = Math.round(Math.min(hi, Math.max(lo, px)));
+      this.root.style.setProperty("--" + k, v + "px");
+      if (save) {
+        this.v[k] = v;
+        this.save();
+      }
+      return v;
+    }
+    reset(k) {
+      delete this.v[k];
+      this.root.style.removeProperty("--" + k);
+      this.save();
+      this.apply();
+    }
+    resetAll() {
+      this.v = {};
+      for (const k of Object.keys(LIM)) this.root.style.removeProperty("--" + k);
+      this.save();
+      this.apply();
+    }
+    save() {
+      store.set(KEY, this.v);
+    }
+    // reaplica os tamanhos salvos, respeitando a janela atual (sem apagar a preferência)
+    apply() {
+      if (this.mq.matches) {
+        this.onChange();
+        return;
+      }
+      for (const k of ["wh", "lw", "rw", "dh", "hw"]) {
+        if (this.v[k] != null) this.set(k, this.v[k], false);
+        else this.root.style.removeProperty("--" + k);
+      }
+      const W = this.root.clientWidth;
+      const squeeze = (k, minCenter) => {
+        const over = this.measure("lw") + this.measure("rw") + minCenter + 2 * GUT - W;
+        if (over > 0) this.root.style.setProperty("--" + k, Math.max(LIM[k][0], this.measure(k) - over) + "px");
+      };
+      for (const k of ["rw", "lw"]) if (this.v[k] == null) squeeze(k, CENTER_FIT);
+      for (const k of ["rw", "lw"]) squeeze(k, CENTER_MIN);
+      this.fit();
+      this.onChange();
+    }
+    // mantém o console e a vista 3D com tamanho mínimo quando outra borda se move
+    // volta ao tamanho preferido (salvo ou padrão) sempre que houver espaço
+    fit(k) {
+      for (const j of ["hw", "dh"]) {
+        if (j === k) continue;
+        if (this.v[j] != null) {
+          this.set(j, this.v[j], false);
+          continue;
+        }
+        this.root.style.removeProperty("--" + j);
+        const hi = this.bounds(j)[1];
+        if (this.measure(j) > hi) this.set(j, hi, false);
+      }
+    }
+    bind(g) {
+      const k = g.dataset.k, dir = +g.dataset.dir || 1, horiz = g.classList.contains("h");
+      let start = null, raf = 0, last = 0;
+      const flush = () => {
+        raf = 0;
+        this.set(k, last, false);
+        this.fit(k);
+        this.onChange();
+      };
+      g.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0 || this.mq.matches) return;
+        e.preventDefault();
+        g.setPointerCapture(e.pointerId);
+        start = { p: horiz ? e.clientY : e.clientX, s: this.measure(k) };
+        g.classList.add("drag");
+        document.body.classList.add(horiz ? "rz-row" : "rz-col");
+      });
+      g.addEventListener("pointermove", (e) => {
+        if (!start) return;
+        last = start.s + dir * ((horiz ? e.clientY : e.clientX) - start.p);
+        if (!raf) raf = requestAnimationFrame(flush);
+      });
+      const end = () => {
+        if (!start) return;
+        start = null;
+        if (raf) {
+          cancelAnimationFrame(raf);
+          flush();
+        }
+        this.v[k] = this.measure(k);
+        this.save();
+        g.classList.remove("drag");
+        document.body.classList.remove("rz-row", "rz-col");
+        this.onChange();
+      };
+      g.addEventListener("pointerup", end);
+      g.addEventListener("pointercancel", end);
+      g.addEventListener("lostpointercapture", end);
+      g.addEventListener("dblclick", () => this.reset(k));
+      g.addEventListener("keydown", (e) => {
+        const step = e.shiftKey ? 64 : 16;
+        const grow = horiz ? { ArrowDown: 1, ArrowUp: -1 } : { ArrowRight: 1, ArrowLeft: -1 };
+        if (e.key in grow) {
+          this.set(k, this.measure(k) + dir * grow[e.key] * step, true);
+          this.fit(k);
+          this.onChange();
+          e.preventDefault();
+          e.stopPropagation();
+        } else if (e.key === "Enter" || e.key === "Home") {
+          this.reset(k);
+          e.preventDefault();
+          e.stopPropagation();
+        } else if (e.key === " ") e.stopPropagation();
+      });
+    }
+  };
+
   // src/main/audio.js
   var Audio = class {
     constructor() {
@@ -10163,6 +10382,8 @@ ${apiTable(PB_API)}
       this.buildExamples();
       renderManual($("#pane-doc"));
       this.data = new DataPanel($("#pane-data"), this);
+      this.layout = new Layout(() => this.layoutChanged());
+      $("#footTs").textContent = (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace("T", " ") + " UTC";
       $("#bRun").onclick = () => this.runCurrent();
       $("#bStop").onclick = () => this.stopProgram();
       $("#sSpeed").onchange = (e) => this.send({ t: "speed", v: +e.target.value });
@@ -16644,6 +16865,14 @@ def _reset():
       }
       if (this.mapEd && this.mapEd.active) this.mapEd.key(e);
     }
+    // painéis mudaram de tamanho: redesenha o que é canvas 2D visível
+    layoutChanged() {
+      cancelAnimationFrame(this._lcRaf);
+      this._lcRaf = requestAnimationFrame(() => {
+        if (this.builder && $("#pane-robot").classList.contains("on")) this.builder.draw();
+        if (this.data && $("#pane-data").classList.contains("on")) this.data.resize();
+      });
+    }
     // ------------------------------------------------------------ menu
     async menu() {
       const st = this.state;
@@ -16686,8 +16915,13 @@ def _reset():
               }
               location.reload();
             }
-          } }, "Recome\xE7ar")
+          } }, "Recome\xE7ar"),
+          el("button", { class: "btn sm", title: "Volta as bordas dos pain\xE9is ao tamanho original", onclick: () => {
+            this.layout.resetAll();
+            toast("Tamanho dos pain\xE9is restaurado.", "ok");
+          } }, "\u229E Restaurar pain\xE9is")
         ),
+        el("p", { class: "hint", style: { marginTop: "8px" } }, "Dica: arraste as bordas entre os pain\xE9is para redimensionar (duplo clique volta ao padr\xE3o). A borda embaixo da \xE1rea de trabalho aumenta a altura total; use a barra de rolagem da direita."),
         el("p", { class: "hint", style: { marginTop: "12px" } }, "MyFLL.lab \xE9 um projeto educacional independente, sem liga\xE7\xE3o com a LEGO ou a FIRST. A API segue a documenta\xE7\xE3o p\xFAblica do Python do hub SPIKE Prime e do Pybricks.")
       );
       const v = await modal("Projeto e configura\xE7\xF5es", body, [{ label: "Fechar", value: null }, { label: "Aplicar", cls: "pri", value: "ok" }]);
