@@ -24,7 +24,7 @@ export function renderManual(root) {
   root.innerHTML = `<div class="doc">
 <h3>Manual do MyFLL.lab</h3>
 <div class="toc">
-  <a href="#m-inicio">começar</a><a href="#m-programa">programa SPIKE</a><a href="#m-api">API SPIKE 3</a><a href="#m-pyb">Pybricks</a>
+  <a href="#m-inicio">começar</a><a href="#m-tapete">tapete da equipe</a><a href="#m-programa">programa SPIKE</a><a href="#m-api">API SPIKE 3</a><a href="#m-pyb">Pybricks</a>
   <a href="#m-contas">contas úteis</a><a href="#m-fll">dicas FLL</a><a href="#m-sim">como simula</a><a href="#m-atalhos">atalhos</a>
 </div>
 
@@ -37,6 +37,14 @@ export function renderManual(root) {
   <li>Acompanhe o robô, o console (print) e o painel do hub. Arraste o robô para reposicionar; <span class="kbd">R</span> reinicia a mesa.</li>
 </ol>
 <p>No hub virtual, os botões <b>◀ ▶</b> escolhem o programa e o botão <b>central</b> executa ou para, igual ao hub de verdade. O console embaixo aceita comandos Python soltos (REPL), por exemplo <code>from hub import port</code> e depois <code>import motor</code> e <code>motor.run(port.E, 200)</code>.</p>
+
+<h4 id="m-tapete">Treinar no tapete da sua equipe</h4>
+<ol>
+  <li>Na aba <b>MESA</b>, em <b>Imagem</b>, carregue a foto ou o arquivo do tapete que a equipe usa (PNG, JPG ou WebP), ou arraste o arquivo para a mesa. Se a imagem vier em PDF, exporte antes como imagem.</li>
+  <li>Escolha o ajuste (esticar, encaixar ou preencher) e, se preciso, gire 180°. O sensor de cor passa a ler as cores da imagem.</li>
+  <li>Use <b>limpar mesa e manter a imagem</b>, coloque os modelos com a ferramenta <b>Objeto</b> (caixas, alavancas, botões, bandeiras, cestas) nos lugares das missões e crie as missões na aba <b>MISSÕES</b>.</li>
+  <li>Salve em <b>Mesa + missões (JSON)</b>: o arquivo leva a imagem, os modelos, as missões e a posição de saída. Os alunos abrem com <b>Abrir mesa + missões</b>.</li>
+</ol>
 
 <h4 id="m-programa">Estrutura de um programa SPIKE 3</h4>
 <pre>from hub import port, light_matrix

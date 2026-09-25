@@ -269,6 +269,7 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
 .objbtn{border:1px solid var(--line2);background:var(--panel2);border-radius:6px;padding:6px 4px;font-size:11px;color:var(--ink2);display:flex;align-items:center;gap:6px}
 .objbtn i{width:12px;height:12px;border-radius:3px;flex:none}
 .objbtn.on{border-color:var(--cyan);color:var(--cyan)}
+.imgblock{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line2)}
 /* montador */
 .bcanvas{width:100%;height:270px;display:block;border:1px solid var(--line);border-radius:8px;background:#070b10;touch-action:none;cursor:default}
 .presets{display:grid;grid-template-columns:1fr 1fr;gap:5px}
@@ -4356,7 +4357,7 @@ void main() {
       a.remove();
     }, 500);
   }
-  function pickFile(accept) {
+  function pickFile(accept, raw) {
     return new Promise((res) => {
       const inp = $("#fileIn");
       inp.accept = accept || "";
@@ -4364,6 +4365,7 @@ void main() {
       inp.onchange = () => {
         const f = inp.files[0];
         if (!f) return res(null);
+        if (raw) return res({ name: f.name, file: f });
         const r = new FileReader();
         r.onload = () => res({ name: f.name, text: r.result });
         r.readAsText(f);
@@ -6282,6 +6284,115 @@ void main() {
     return w || 7.5;
   }
 
+  // src/main/matimage.js
+  var REG = /* @__PURE__ */ new Map();
+  var listener = null;
+  var FIT_NAMES = { stretch: "esticar no tapete", contain: "encaixar inteira", cover: "preencher (corta)" };
+  function setMatImageListener(fn) {
+    listener = fn;
+  }
+  function hashStr(s) {
+    let h = 2166136261;
+    const step = Math.max(1, Math.floor(s.length / 4e3));
+    for (let i = 0; i < s.length; i += step) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    h ^= s.length;
+    h = Math.imul(h, 16777619);
+    return (h >>> 0).toString(36);
+  }
+  function registerMatImage(src) {
+    const id = "img" + hashStr(src);
+    if (!REG.has(id)) REG.set(id, { src, img: null });
+    return id;
+  }
+  function matImageSrc(id) {
+    const e = REG.get(id);
+    return e ? e.src : null;
+  }
+  function matImageFor(id) {
+    const e = REG.get(id);
+    if (!e) return null;
+    if (e.img && e.img.complete && e.img.naturalWidth) return e.img;
+    if (!e.img) {
+      e.img = new Image();
+      e.img.onload = () => {
+        if (listener) listener(id);
+      };
+      e.img.src = e.src;
+    }
+    return null;
+  }
+  function drawMatImage(g, W, H, spec) {
+    const im = spec && spec.id ? matImageFor(spec.id) : null;
+    if (!im) return false;
+    const iw = im.naturalWidth, ih = im.naturalHeight;
+    let dw = W, dh = H;
+    if (spec.fit === "contain" || spec.fit === "cover") {
+      const k = spec.fit === "contain" ? Math.min(W / iw, H / ih) : Math.max(W / iw, H / ih);
+      dw = iw * k;
+      dh = ih * k;
+    }
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, W, H);
+    g.clip();
+    g.translate(W / 2, H / 2);
+    if (spec.rot) g.rotate(Math.PI);
+    g.imageSmoothingQuality = "high";
+    g.drawImage(im, -dw / 2, -dh / 2, dw, dh);
+    g.restore();
+    return true;
+  }
+  function fileToMatImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\//.test(file.type)) {
+        reject(new Error("tipo"));
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 2400 / Math.max(im.naturalWidth, im.naturalHeight));
+        const w = Math.max(1, Math.round(im.naturalWidth * k)), h = Math.max(1, Math.round(im.naturalHeight * k));
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const g = c.getContext("2d");
+        g.fillStyle = "#ffffff";
+        g.fillRect(0, 0, w, h);
+        g.imageSmoothingQuality = "high";
+        g.drawImage(im, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve({ src: c.toDataURL("image/jpeg", 0.9), w, h, ow: im.naturalWidth, oh: im.naturalHeight });
+      };
+      im.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("imagem"));
+      };
+      im.src = url;
+    });
+  }
+  function mapWithImage(map) {
+    if (!map || !map.img || !map.img.id) return map;
+    const src = matImageSrc(map.img.id);
+    if (!src) {
+      const m = Object.assign({}, map);
+      delete m.img;
+      return m;
+    }
+    return Object.assign({}, map, { img: Object.assign({}, map.img, { src }) });
+  }
+  function adoptMapImage(map) {
+    if (!map || !map.img) return map;
+    if (map.img.src) {
+      const id = registerMatImage(map.img.src);
+      map.img = { id, fit: map.img.fit || "stretch", rot: !!map.img.rot, name: map.img.name || "" };
+    } else if (!map.img.id || !REG.has(map.img.id)) delete map.img;
+    return map;
+  }
+
   // src/main/matpaint.js
   var MAT_S = 1;
   function makeMatCanvas() {
@@ -6302,7 +6413,8 @@ void main() {
     g.save();
     g.fillStyle = map.bg || "#f3f1ea";
     g.fillRect(0, 0, W, H);
-    if (map.texture !== false) {
+    const hasImg = drawMatImage(g, W, H, map.img);
+    if (map.texture !== false && !hasImg) {
       let s = 1234567;
       const rnd = () => {
         s = s * 1103515245 + 12345 & 2147483647;
@@ -6315,7 +6427,10 @@ void main() {
       }
       g.globalAlpha = 1;
     }
-    for (const it of map.items || []) drawItem(g, it);
+    for (const it of map.items || []) {
+      if (it.t === "home" && map.hideHomes) continue;
+      drawItem(g, it);
+    }
     g.strokeStyle = "rgba(0,0,0,.25)";
     g.lineWidth = 2;
     g.strokeRect(1, 1, W - 2, H - 2);
@@ -7827,6 +7942,54 @@ void main() {
       this.hist = [];
       this.fut = [];
       this.render();
+      const dropZone = (elm, onlyWhenActive) => {
+        elm.addEventListener("dragover", (e) => {
+          if (onlyWhenActive && !this.active) return;
+          if ([...e.dataTransfer.items || []].some((i) => i.kind === "file")) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+          }
+        });
+        elm.addEventListener("drop", (e) => {
+          if (onlyWhenActive && !this.active) return;
+          const f = [...e.dataTransfer.files || []].find((x) => /^image\//.test(x.type));
+          if (!f) return;
+          e.preventDefault();
+          this.useImageFile(f);
+        });
+      };
+      dropZone(root, false);
+      dropZone(document.getElementById("vp"), false);
+      const files = (e) => e.dataTransfer && [...e.dataTransfer.types || []].includes("Files");
+      window.addEventListener("dragover", (e) => {
+        if (files(e) && !e.defaultPrevented) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "none";
+        }
+      });
+      window.addEventListener("drop", (e) => {
+        if (files(e) && !e.defaultPrevented) e.preventDefault();
+      });
+    }
+    // ------------------------------------------------------------ imagem de fundo
+    async useImageFile(file) {
+      const st = this.app.state;
+      let r;
+      toast("Preparando a imagem do tapete...", "", 1500);
+      try {
+        r = await fileToMatImage(file);
+      } catch (e) {
+        toast("N\xE3o consegui abrir essa imagem. Use PNG, JPG ou WebP.", "err");
+        return;
+      }
+      this.snapshot();
+      const id = registerMatImage(r.src);
+      st.map.img = { id, fit: "stretch", rot: false, name: file.name };
+      const ratio = r.ow / r.oh, want = MAT.W / MAT.H;
+      this.changed(false);
+      this.render();
+      if (Math.abs(ratio / want - 1) > 0.06) toast(`A imagem tem propor\xE7\xE3o ${fmt(ratio, 2)}:1 e o tapete ${fmt(want, 2)}:1. Se ficar esticada, escolha "encaixar inteira" ou "preencher".`, "warn", 6500);
+      else toast(`Imagem aplicada ao tapete (${r.ow} x ${r.oh} px). O sensor de cor j\xE1 l\xEA as cores dela.`, "ok", 3500);
     }
     setActive(on) {
       this.active = on;
@@ -7853,9 +8016,13 @@ void main() {
       if (this.active) this.renderProps();
     }
     snapshot() {
-      this.hist.push(JSON.stringify({ map: this.app.state.map, objects: this.app.state.objects }));
+      this.hist.push(this.snapState());
       if (this.hist.length > 60) this.hist.shift();
       this.fut = [];
+    }
+    snapState() {
+      const st = this.app.state;
+      return JSON.stringify({ map: st.map, objects: st.objects, missions: st.missions });
     }
     undo() {
       const s = this.hist.pop();
@@ -7863,24 +8030,27 @@ void main() {
         toast("Nada para desfazer.", "", 1200);
         return;
       }
-      this.fut.push(JSON.stringify({ map: this.app.state.map, objects: this.app.state.objects }));
+      this.fut.push(this.snapState());
       const o = JSON.parse(s);
       this.restore(o);
     }
     redo() {
       const s = this.fut.pop();
       if (!s) return;
-      this.hist.push(JSON.stringify({ map: this.app.state.map, objects: this.app.state.objects }));
+      this.hist.push(this.snapState());
       this.restore(JSON.parse(s));
     }
     restore(o) {
       const st = this.app.state;
       const objChanged = JSON.stringify(st.objects) !== JSON.stringify(o.objects);
+      const misChanged = o.missions && JSON.stringify(st.missions) !== JSON.stringify(o.missions);
       st.map = o.map;
       st.objects = o.objects;
       this.sel = null;
+      if (o.missions) st.missions = o.missions;
       this.app.repaintMat(true);
       if (objChanged) this.app.objectsChanged();
+      else if (misChanged) this.app.missions.render();
       this.app.saveSoon();
       this.render();
     }
@@ -8216,7 +8386,8 @@ void main() {
             this.changed(false);
           } }, "grade 10 cm")
         )),
-        el("p", { class: "hint" }, "Tapete de 2362 x 1143 mm, na mesa com bordas de 76 mm como na FLL. BASE azul e rosa s\xE3o as \xE1reas de lan\xE7amento.")
+        el("p", { class: "hint" }, "Tapete de 2362 x 1143 mm, na mesa com bordas de 76 mm como na FLL. BASE azul e rosa s\xE3o as \xE1reas de lan\xE7amento."),
+        this.imageBlock()
       ));
       const tools = el("div", { class: "tools" });
       for (const [k, name, svg] of TOOLS) {
@@ -8292,7 +8463,7 @@ void main() {
         el(
           "div",
           { class: "row" },
-          el("button", { class: "btn sm", onclick: () => download(`mesa-${slug(st.map.name)}.json`, JSON.stringify({ map: st.map, objects: st.objects, missions: st.missions, start: st.start }, null, 1), "application/json") }, "\u2913 Mesa (JSON)"),
+          el("button", { class: "btn sm", title: "Tapete (com a imagem de fundo), modelos, miss\xF5es e posi\xE7\xE3o de sa\xEDda num s\xF3 arquivo", onclick: () => download(`mesa-${slug(st.map.name)}.json`, JSON.stringify({ map: mapWithImage(st.map), objects: st.objects, missions: st.missions, start: st.start }, null, 1), "application/json") }, "\u2913 Mesa + miss\xF5es (JSON)"),
           el("button", { class: "btn sm", onclick: async () => {
             const f = await pickFile(".json");
             if (!f) return;
@@ -8306,10 +8477,74 @@ void main() {
             } catch (e) {
               toast("Arquivo de mesa inv\xE1lido.", "err");
             }
-          } }, "\u2912 Abrir mesa"),
+          } }, "\u2912 Abrir mesa + miss\xF5es"),
           el("button", { class: "btn sm", title: "Imagem 1 px = 1 mm (imprima em escala para uma mesa real)", onclick: () => this.exportPng() }, "\u2913 Imagem PNG")
         )
       ));
+    }
+    imageBlock() {
+      const st = this.app.state, img = st.map.img;
+      const box2 = el("div", { class: "imgblock" });
+      const load = el("button", { class: "btn sm pri", onclick: async () => {
+        const f = await pickFile("image/png,image/jpeg,image/webp,image/*", true);
+        if (f) this.useImageFile(f.file);
+      } }, img ? "\u2912 trocar imagem" : "\u2912 carregar imagem");
+      box2.appendChild(el("div", { class: "fld2" }, el("label", {}, "Imagem"), el(
+        "div",
+        { class: "row" },
+        load,
+        img ? el("button", { class: "btn xs bad", onclick: () => {
+          this.snapshot();
+          delete st.map.img;
+          this.changed(false);
+          this.render();
+          toast("Imagem removida do tapete.", "ok");
+        } }, "remover") : null
+      )));
+      if (img) {
+        const fit = el("select", { class: "in", onchange: (e) => {
+          this.snapshot();
+          img.fit = e.target.value;
+          this.changed(false);
+        } }, ...Object.entries(FIT_NAMES).map(([k, n]) => el("option", { value: k }, n)));
+        fit.value = img.fit || "stretch";
+        box2.appendChild(el("div", { class: "fld2" }, el("label", {}, "Ajuste"), el(
+          "div",
+          { class: "row nw" },
+          fit,
+          el("button", { class: "btn xs" + (img.rot ? " on" : ""), title: "Girar a imagem 180\xB0", onclick: () => {
+            this.snapshot();
+            img.rot = !img.rot;
+            this.changed(false);
+            this.render();
+          } }, "\u21BB 180\xB0")
+        )));
+        box2.appendChild(el("div", { class: "fld2" }, el("label", {}, "BASEs"), el(
+          "label",
+          { class: "row nw", style: { gap: "6px", color: "var(--ink2)" } },
+          el("input", { type: "checkbox", checked: !st.map.hideHomes, onchange: (e) => {
+            this.snapshot();
+            st.map.hideHomes = !e.target.checked;
+            this.changed(false);
+          } }),
+          "desenhar as BASEs por cima"
+        )));
+        box2.appendChild(el("div", { class: "fld2" }, el("label", {}, "Mesa"), el(
+          "div",
+          {},
+          el("button", { class: "btn xs warn", title: "Apaga linhas, zonas, modelos e miss\xF5es, mas mant\xE9m a imagem e as BASEs", onclick: async () => {
+            const v = await modal("Mesa limpa com esta imagem", "Apagar os desenhos, os modelos e as miss\xF5es atuais e manter s\xF3 a imagem do tapete (e as BASEs)? D\xE1 para desfazer com Ctrl+Z.", [{ label: "Cancelar", value: null }, { label: "Limpar", cls: "warn", value: "ok" }]);
+            if (v !== "ok") return;
+            this.snapshot();
+            const map = Object.assign({}, st.map, { items: st.map.items.filter((i) => i.t === "home"), name: (img.name || "Mesa").replace(/\.[a-z0-9]+$/i, "") });
+            this.app.loadField({ map, objects: [], missions: [] }, true);
+            toast("Mesa limpa. Agora coloque modelos (ferramenta Objeto) e crie as miss\xF5es na aba MISS\xD5ES.", "ok", 4500);
+          } }, "limpar mesa e manter a imagem")
+        )));
+        if (img.name) box2.appendChild(el("p", { class: "hint mono", style: { margin: "2px 0 0" } }, img.name));
+      }
+      box2.appendChild(el("p", { class: "hint" }, 'Use a foto ou o arquivo do tapete da sua equipe (PNG, JPG ou WebP; pode arrastar o arquivo para c\xE1). A imagem vira o tapete e o sensor de cor l\xEA as cores dela. Depois coloque modelos e zonas de miss\xE3o por cima, crie as miss\xF5es e salve tudo em "Mesa + miss\xF5es (JSON)" para a turma abrir.'));
+      return box2;
     }
     applyColorToSel(c) {
       const st = this.app.state;
@@ -9594,7 +9829,7 @@ run_task(main())
     root.innerHTML = `<div class="doc">
 <h3>Manual do MyFLL.lab</h3>
 <div class="toc">
-  <a href="#m-inicio">come\xE7ar</a><a href="#m-programa">programa SPIKE</a><a href="#m-api">API SPIKE 3</a><a href="#m-pyb">Pybricks</a>
+  <a href="#m-inicio">come\xE7ar</a><a href="#m-tapete">tapete da equipe</a><a href="#m-programa">programa SPIKE</a><a href="#m-api">API SPIKE 3</a><a href="#m-pyb">Pybricks</a>
   <a href="#m-contas">contas \xFAteis</a><a href="#m-fll">dicas FLL</a><a href="#m-sim">como simula</a><a href="#m-atalhos">atalhos</a>
 </div>
 
@@ -9607,6 +9842,14 @@ run_task(main())
   <li>Acompanhe o rob\xF4, o console (print) e o painel do hub. Arraste o rob\xF4 para reposicionar; <span class="kbd">R</span> reinicia a mesa.</li>
 </ol>
 <p>No hub virtual, os bot\xF5es <b>\u25C0 \u25B6</b> escolhem o programa e o bot\xE3o <b>central</b> executa ou para, igual ao hub de verdade. O console embaixo aceita comandos Python soltos (REPL), por exemplo <code>from hub import port</code> e depois <code>import motor</code> e <code>motor.run(port.E, 200)</code>.</p>
+
+<h4 id="m-tapete">Treinar no tapete da sua equipe</h4>
+<ol>
+  <li>Na aba <b>MESA</b>, em <b>Imagem</b>, carregue a foto ou o arquivo do tapete que a equipe usa (PNG, JPG ou WebP), ou arraste o arquivo para a mesa. Se a imagem vier em PDF, exporte antes como imagem.</li>
+  <li>Escolha o ajuste (esticar, encaixar ou preencher) e, se preciso, gire 180\xB0. O sensor de cor passa a ler as cores da imagem.</li>
+  <li>Use <b>limpar mesa e manter a imagem</b>, coloque os modelos com a ferramenta <b>Objeto</b> (caixas, alavancas, bot\xF5es, bandeiras, cestas) nos lugares das miss\xF5es e crie as miss\xF5es na aba <b>MISS\xD5ES</b>.</li>
+  <li>Salve em <b>Mesa + miss\xF5es (JSON)</b>: o arquivo leva a imagem, os modelos, as miss\xF5es e a posi\xE7\xE3o de sa\xEDda. Os alunos abrem com <b>Abrir mesa + miss\xF5es</b>.</li>
+</ol>
 
 <h4 id="m-programa">Estrutura de um programa SPIKE 3</h4>
 <pre>from hub import port, light_matrix
@@ -10248,6 +10491,7 @@ ${apiTable(PB_API)}
 
   // src/main/app.js
   var SAVE_KEY = "myfll.v1";
+  var IMG_KEY = "myfll.matimg";
   var NSLOTS = 20;
   var App = class {
     constructor() {
@@ -10286,13 +10530,43 @@ ${apiTable(PB_API)}
       const st = Object.assign(d, s);
       st.settings = Object.assign(this.defaults().settings, s.settings || {});
       while (st.slots.length < NSLOTS) st.slots.push({ name: "", dialect: "spike", code: "" });
+      this._imgSaved = null;
+      if (st.map && st.map.img) {
+        if (st.map.img.src) adoptMapImage(st.map);
+        else {
+          const rec = store.get(IMG_KEY, null);
+          if (rec && rec.src && registerMatImage(rec.src) === st.map.img.id) this._imgSaved = st.map.img.id;
+          else delete st.map.img;
+        }
+      }
       return st;
     }
     saveSoon() {
       clearTimeout(this.saveT);
       this.saveT = setTimeout(() => {
-        if (!store.set(SAVE_KEY, this.state)) this._warnedSave || (this._warnedSave = true, toast("N\xE3o foi poss\xEDvel salvar no navegador (modo privado?). Use \u2630 para exportar o projeto.", "warn", 5e3));
+        this.saveT = 0;
+        this.persist();
       }, 700);
+    }
+    persist() {
+      const st = this.state;
+      if (!store.set(SAVE_KEY, st)) this._warnedSave || (this._warnedSave = true, toast("N\xE3o foi poss\xEDvel salvar no navegador (modo privado?). Use \u2630 para exportar o projeto.", "warn", 5e3));
+      const id = st.map && st.map.img ? st.map.img.id : null;
+      if (id === this._imgSaved) return;
+      if (id) {
+        const src = matImageSrc(id);
+        if (src && store.set(IMG_KEY, { id, src })) this._imgSaved = id;
+        else if (this._warnedImg !== id) {
+          this._warnedImg = id;
+          toast("A imagem do tapete \xE9 grande demais para ficar guardada neste navegador. Ela funciona agora; para guardar, use MESA > Mesa + miss\xF5es (JSON).", "warn", 7e3);
+        }
+      } else {
+        try {
+          localStorage.removeItem(IMG_KEY);
+        } catch (e) {
+        }
+        this._imgSaved = null;
+      }
     }
     // ------------------------------------------------------------ interface
     initUI() {
@@ -10305,6 +10579,7 @@ ${apiTable(PB_API)}
         if (id === "data" && this.data) this.data.resize();
       });
       this.matCanvas = makeMatCanvas();
+      setMatImageListener(() => this.repaintMat(true));
       this.view = new View3D($("#view"), {
         down: (p, e) => this.onDown(p, e),
         move: (p, e) => this.onMove(p, e),
@@ -10393,7 +10668,8 @@ ${apiTable(PB_API)}
       window.addEventListener("beforeunload", () => {
         if (this.saveT) {
           clearTimeout(this.saveT);
-          store.set(SAVE_KEY, this.state);
+          this.saveT = 0;
+          this.persist();
         }
       });
     }
@@ -16633,6 +16909,7 @@ def _reset():
     }
     loadField(r, resetScore) {
       const st = this.state;
+      adoptMapImage(r.map);
       st.map = r.map;
       st.objects = r.objects || [];
       st.missions = r.missions || [];
@@ -16893,14 +17170,21 @@ def _reset():
         el(
           "div",
           { class: "row" },
-          el("button", { class: "btn sm", onclick: () => download("myfll-projeto.json", JSON.stringify(st, null, 1), "application/json") }, "\u2913 Exportar projeto"),
+          el("button", { class: "btn sm", onclick: () => download("myfll-projeto.json", JSON.stringify(Object.assign({}, st, { map: mapWithImage(st.map) }), null, 1), "application/json") }, "\u2913 Exportar projeto"),
           el("button", { class: "btn sm", onclick: async () => {
             const f = await pickFile(".json");
             if (!f) return;
             try {
               const s = JSON.parse(f.text);
               if (s.v !== 1) throw new Error("vers\xE3o");
+              if (s.map && s.map.img && s.map.img.src) {
+                const src = s.map.img.src;
+                adoptMapImage(s.map);
+                store.set(IMG_KEY, { id: s.map.img.id, src });
+              }
               store.set(SAVE_KEY, s);
+              clearTimeout(this.saveT);
+              this.saveT = 0;
               location.reload();
             } catch (err) {
               toast("Arquivo inv\xE1lido.", "err");
@@ -16911,8 +17195,11 @@ def _reset():
             if (v2 === "ok") {
               try {
                 localStorage.removeItem(SAVE_KEY);
+                localStorage.removeItem(IMG_KEY);
               } catch (err) {
               }
+              clearTimeout(this.saveT);
+              this.saveT = 0;
               location.reload();
             }
           } }, "Recome\xE7ar"),

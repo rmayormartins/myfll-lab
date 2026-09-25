@@ -16,12 +16,14 @@ import { EXAMPLES, STARTER } from './examples.js';
 import { renderManual } from './manual.js';
 import { DataPanel } from './datapanel.js';
 import { Layout } from './layout.js';
+import { setMatImageListener, registerMatImage, matImageSrc, mapWithImage, adoptMapImage } from './matimage.js';
 import { Audio } from './audio.js';
 import { complete } from './apidata.js';
 import { defaultRobot, layoutRobot, deepClone, validateRobot, PORTS } from '../common/catalog.js';
 import { OBJ_TYPES, objRadius } from '../common/objects.js';
 
 const SAVE_KEY = 'myfll.v1';
+const IMG_KEY = 'myfll.matimg';   // imagem do tapete fica separada do projeto
 const NSLOTS = 20;
 
 class App {
@@ -55,13 +57,35 @@ class App {
     const st = Object.assign(d, s);
     st.settings = Object.assign(this.defaults().settings, s.settings || {});
     while (st.slots.length < NSLOTS) st.slots.push({ name: '', dialect: 'spike', code: '' });
+    // imagem de fundo do tapete: embutida (projeto importado) ou guardada à parte
+    this._imgSaved = null;
+    if (st.map && st.map.img) {
+      if (st.map.img.src) adoptMapImage(st.map);
+      else {
+        const rec = store.get(IMG_KEY, null);
+        if (rec && rec.src && registerMatImage(rec.src) === st.map.img.id) this._imgSaved = st.map.img.id;
+        else delete st.map.img;
+      }
+    }
     return st;
   }
   saveSoon() {
     clearTimeout(this.saveT);
-    this.saveT = setTimeout(() => {
-      if (!store.set(SAVE_KEY, this.state)) this._warnedSave || (this._warnedSave = true, toast('Não foi possível salvar no navegador (modo privado?). Use ☰ para exportar o projeto.', 'warn', 5000));
-    }, 700);
+    this.saveT = setTimeout(() => { this.saveT = 0; this.persist(); }, 700);
+  }
+  persist() {
+    const st = this.state;
+    if (!store.set(SAVE_KEY, st)) this._warnedSave || (this._warnedSave = true, toast('Não foi possível salvar no navegador (modo privado?). Use ☰ para exportar o projeto.', 'warn', 5000));
+    const id = st.map && st.map.img ? st.map.img.id : null;
+    if (id === this._imgSaved) return;
+    if (id) {
+      const src = matImageSrc(id);
+      if (src && store.set(IMG_KEY, { id, src })) this._imgSaved = id;
+      else if (this._warnedImg !== id) { this._warnedImg = id; toast('A imagem do tapete é grande demais para ficar guardada neste navegador. Ela funciona agora; para guardar, use MESA > Mesa + missões (JSON).', 'warn', 7000); }
+    } else {
+      try { localStorage.removeItem(IMG_KEY); } catch (e) { /* */ }
+      this._imgSaved = null;
+    }
   }
 
   // ------------------------------------------------------------ interface
@@ -69,8 +93,9 @@ class App {
     const st = this.state;
     tabs($('#left'), (id) => { if (this.mapEd) this.mapEd.setActive(id === 'map'); if (id === 'robot' && this.builder) requestAnimationFrame(() => this.builder.draw()); });
     tabs($('#right'), (id) => { if (id === 'data' && this.data) this.data.resize(); });
-    // tapete
+    // tapete (a imagem de fundo, se houver, chega depois de decodificada)
     this.matCanvas = makeMatCanvas();
+    setMatImageListener(() => this.repaintMat(true));
     // vista 3D
     this.view = new View3D($('#view'), {
       down: (p, e) => this.onDown(p, e), move: (p, e) => this.onMove(p, e), up: (p, e) => this.onUp(p, e),
@@ -130,7 +155,7 @@ class App {
     $('#bResetField').onclick = () => this.resetField();
     $('#bMenu').onclick = () => this.menu();
     document.addEventListener('keydown', (e) => this.onKey(e));
-    window.addEventListener('beforeunload', () => { if (this.saveT) { clearTimeout(this.saveT); store.set(SAVE_KEY, this.state); } });
+    window.addEventListener('beforeunload', () => { if (this.saveT) { clearTimeout(this.saveT); this.saveT = 0; this.persist(); } });
   }
 
   buildHudTR() {
@@ -419,6 +444,7 @@ class App {
   }
   loadField(r, resetScore) {
     const st = this.state;
+    adoptMapImage(r.map);
     st.map = r.map; st.objects = r.objects || []; st.missions = r.missions || [];
     if (this.mapEd) this.mapEd.clearSel();
     this.repaintMat(true);
@@ -621,14 +647,14 @@ class App {
       el('div', { class: 'fld2' }, el('label', {}, 'Som do hub'), snd),
       el('hr', { style: { border: 0, borderTop: '1px solid #18222d', margin: '12px 0' } }),
       el('div', { class: 'row' },
-        el('button', { class: 'btn sm', onclick: () => download('myfll-projeto.json', JSON.stringify(st, null, 1), 'application/json') }, '⤓ Exportar projeto'),
+        el('button', { class: 'btn sm', onclick: () => download('myfll-projeto.json', JSON.stringify(Object.assign({}, st, { map: mapWithImage(st.map) }), null, 1), 'application/json') }, '⤓ Exportar projeto'),
         el('button', { class: 'btn sm', onclick: async () => {
           const f = await pickFile('.json'); if (!f) return;
-          try { const s = JSON.parse(f.text); if (s.v !== 1) throw new Error('versão'); store.set(SAVE_KEY, s); location.reload(); } catch (err) { toast('Arquivo inválido.', 'err'); }
+          try { const s = JSON.parse(f.text); if (s.v !== 1) throw new Error('versão'); if (s.map && s.map.img && s.map.img.src) { const src = s.map.img.src; adoptMapImage(s.map); store.set(IMG_KEY, { id: s.map.img.id, src }); } store.set(SAVE_KEY, s); clearTimeout(this.saveT); this.saveT = 0; location.reload(); } catch (err) { toast('Arquivo inválido.', 'err'); }
         } }, '⤒ Abrir projeto'),
         el('button', { class: 'btn sm warn', onclick: async () => {
           const v = await modal('Recomeçar do zero', 'Apaga robô, mesa, missões e os 20 programas deste navegador.', [{ label: 'Cancelar', value: null }, { label: 'Apagar tudo', cls: 'bad', value: 'ok' }]);
-          if (v === 'ok') { try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* */ } location.reload(); }
+          if (v === 'ok') { try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(IMG_KEY); } catch (err) { /* */ } clearTimeout(this.saveT); this.saveT = 0; location.reload(); }
         } }, 'Recomeçar'),
         el('button', { class: 'btn sm', title: 'Volta as bordas dos painéis ao tamanho original', onclick: () => { this.layout.resetAll(); toast('Tamanho dos painéis restaurado.', 'ok'); } }, '⊞ Restaurar painéis')),
       el('p', { class: 'hint', style: { marginTop: '8px' } }, 'Dica: arraste as bordas entre os painéis para redimensionar (duplo clique volta ao padrão). A borda embaixo da área de trabalho aumenta a altura total; use a barra de rolagem da direita.'),

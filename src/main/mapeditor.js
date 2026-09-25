@@ -8,6 +8,7 @@ import { el, toast, download, pickFile, modal, uid, fmt } from './ui.js';
 import { TEMPLATES, generateMap, homeItems } from './mapgen.js';
 import { hitItem, itemBounds, moveItem, segDist, makeMatCanvas, paintMat } from './matpaint.js';
 import { OBJ_TYPES, objDefaults, objRadius, MAT } from '../common/objects.js';
+import { fileToMatImage, registerMatImage, mapWithImage, FIT_NAMES } from './matimage.js';
 
 const TOOLS = [
   ['select', 'Selecionar', '<path d="M5 3l12 8-6 1 3 6-2 1-3-6-4 4z" fill="currentColor"/>'],
@@ -35,6 +36,37 @@ export class MapEditor {
     this.draft = null;
     this.hist = []; this.fut = [];
     this.render();
+    // soltar um arquivo de imagem na aba MESA ou na vista 3D troca a imagem do tapete
+    const dropZone = (elm, onlyWhenActive) => {
+      elm.addEventListener('dragover', (e) => { if (onlyWhenActive && !this.active) return; if ([...(e.dataTransfer.items || [])].some(i => i.kind === 'file')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+      elm.addEventListener('drop', (e) => {
+        if (onlyWhenActive && !this.active) return;
+        const f = [...(e.dataTransfer.files || [])].find(x => /^image\//.test(x.type));
+        if (!f) return;
+        e.preventDefault(); this.useImageFile(f);
+      });
+    };
+    dropZone(root, false);
+    dropZone(document.getElementById('vp'), false);
+    // em qualquer outro lugar, soltar um arquivo não deve abrir a imagem no lugar do simulador
+    const files = (e) => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+    window.addEventListener('dragover', (e) => { if (files(e) && !e.defaultPrevented) { e.preventDefault(); e.dataTransfer.dropEffect = 'none'; } });
+    window.addEventListener('drop', (e) => { if (files(e) && !e.defaultPrevented) e.preventDefault(); });
+  }
+
+  // ------------------------------------------------------------ imagem de fundo
+  async useImageFile(file) {
+    const st = this.app.state;
+    let r;
+    toast('Preparando a imagem do tapete...', '', 1500);
+    try { r = await fileToMatImage(file); } catch (e) { toast('Não consegui abrir essa imagem. Use PNG, JPG ou WebP.', 'err'); return; }
+    this.snapshot();
+    const id = registerMatImage(r.src);
+    st.map.img = { id, fit: 'stretch', rot: false, name: file.name };
+    const ratio = r.ow / r.oh, want = MAT.W / MAT.H;
+    this.changed(false); this.render();
+    if (Math.abs(ratio / want - 1) > 0.06) toast(`A imagem tem proporção ${fmt(ratio, 2)}:1 e o tapete ${fmt(want, 2)}:1. Se ficar esticada, escolha "encaixar inteira" ou "preencher".`, 'warn', 6500);
+    else toast(`Imagem aplicada ao tapete (${r.ow} x ${r.oh} px). O sensor de cor já lê as cores dela.`, 'ok', 3500);
   }
 
   setActive(on) {
@@ -48,23 +80,27 @@ export class MapEditor {
   clearSel() { this.sel = null; }
   selectObject(id) { this.sel = { kind: 'obj', id }; if (this.active) this.renderProps(); }
 
-  snapshot() { this.hist.push(JSON.stringify({ map: this.app.state.map, objects: this.app.state.objects })); if (this.hist.length > 60) this.hist.shift(); this.fut = []; }
+  snapshot() { this.hist.push(this.snapState()); if (this.hist.length > 60) this.hist.shift(); this.fut = []; }
+  snapState() { const st = this.app.state; return JSON.stringify({ map: st.map, objects: st.objects, missions: st.missions }); }
   undo() {
     const s = this.hist.pop(); if (!s) { toast('Nada para desfazer.', '', 1200); return; }
-    this.fut.push(JSON.stringify({ map: this.app.state.map, objects: this.app.state.objects }));
+    this.fut.push(this.snapState());
     const o = JSON.parse(s); this.restore(o);
   }
   redo() {
     const s = this.fut.pop(); if (!s) return;
-    this.hist.push(JSON.stringify({ map: this.app.state.map, objects: this.app.state.objects }));
+    this.hist.push(this.snapState());
     this.restore(JSON.parse(s));
   }
   restore(o) {
     const st = this.app.state;
     const objChanged = JSON.stringify(st.objects) !== JSON.stringify(o.objects);
+    const misChanged = o.missions && JSON.stringify(st.missions) !== JSON.stringify(o.missions);
     st.map = o.map; st.objects = o.objects; this.sel = null;
+    if (o.missions) st.missions = o.missions;
     this.app.repaintMat(true);
     if (objChanged) this.app.objectsChanged();
+    else if (misChanged) this.app.missions.render();
     this.app.saveSoon(); this.render();
   }
   changed(obj) {
@@ -254,7 +290,8 @@ export class MapEditor {
         el('input', { type: 'color', value: toHex(st.map.bg || '#f3f1ea'), oninput: (e) => { st.map.bg = e.target.value; this.app.repaintMat(false); }, onchange: () => this.changed(false) }),
         el('button', { class: 'btn xs', onclick: () => { this.snapshot(); st.map.items = st.map.items.filter(i => i.t === 'home'); this.sel = null; this.changed(false); } }, 'limpar desenhos'),
         el('button', { class: 'btn xs', onclick: () => { this.snapshot(); if (!st.map.items.some(i => i.t === 'grid')) st.map.items.unshift({ t: 'grid', step: 100, color: 'rgba(0,0,0,.14)', labels: true }); else st.map.items = st.map.items.filter(i => i.t !== 'grid'); this.changed(false); } }, 'grade 10 cm'))),
-      el('p', { class: 'hint' }, 'Tapete de 2362 x 1143 mm, na mesa com bordas de 76 mm como na FLL. BASE azul e rosa são as áreas de lançamento.')));
+      el('p', { class: 'hint' }, 'Tapete de 2362 x 1143 mm, na mesa com bordas de 76 mm como na FLL. BASE azul e rosa são as áreas de lançamento.'),
+      this.imageBlock()));
     // ferramentas
     const tools = el('div', { class: 'tools' });
     for (const [k, name, svg] of TOOLS) {
@@ -297,9 +334,37 @@ export class MapEditor {
     // exportar
     root.appendChild(el('div', { class: 'sec' }, el('h2', {}, el('span', { class: 'n' }, '04'), 'Arquivos'),
       el('div', { class: 'row' },
-        el('button', { class: 'btn sm', onclick: () => download(`mesa-${slug(st.map.name)}.json`, JSON.stringify({ map: st.map, objects: st.objects, missions: st.missions, start: st.start }, null, 1), 'application/json') }, '⤓ Mesa (JSON)'),
-        el('button', { class: 'btn sm', onclick: async () => { const f = await pickFile('.json'); if (!f) return; try { const o = JSON.parse(f.text); if (!o.map) throw 0; this.snapshot(); if (o.start) st.start = o.start; this.app.loadField(o, true); toast('Mesa carregada.', 'ok'); } catch (e) { toast('Arquivo de mesa inválido.', 'err'); } } }, '⤒ Abrir mesa'),
+        el('button', { class: 'btn sm', title: 'Tapete (com a imagem de fundo), modelos, missões e posição de saída num só arquivo', onclick: () => download(`mesa-${slug(st.map.name)}.json`, JSON.stringify({ map: mapWithImage(st.map), objects: st.objects, missions: st.missions, start: st.start }, null, 1), 'application/json') }, '⤓ Mesa + missões (JSON)'),
+        el('button', { class: 'btn sm', onclick: async () => { const f = await pickFile('.json'); if (!f) return; try { const o = JSON.parse(f.text); if (!o.map) throw 0; this.snapshot(); if (o.start) st.start = o.start; this.app.loadField(o, true); toast('Mesa carregada.', 'ok'); } catch (e) { toast('Arquivo de mesa inválido.', 'err'); } } }, '⤒ Abrir mesa + missões'),
         el('button', { class: 'btn sm', title: 'Imagem 1 px = 1 mm (imprima em escala para uma mesa real)', onclick: () => this.exportPng() }, '⤓ Imagem PNG'))));
+  }
+
+  imageBlock() {
+    const st = this.app.state, img = st.map.img;
+    const box = el('div', { class: 'imgblock' });
+    const load = el('button', { class: 'btn sm pri', onclick: async () => { const f = await pickFile('image/png,image/jpeg,image/webp,image/*', true); if (f) this.useImageFile(f.file); } }, img ? '⤒ trocar imagem' : '⤒ carregar imagem');
+    box.appendChild(el('div', { class: 'fld2' }, el('label', {}, 'Imagem'), el('div', { class: 'row' }, load,
+      img ? el('button', { class: 'btn xs bad', onclick: () => { this.snapshot(); delete st.map.img; this.changed(false); this.render(); toast('Imagem removida do tapete.', 'ok'); } }, 'remover') : null)));
+    if (img) {
+      const fit = el('select', { class: 'in', onchange: (e) => { this.snapshot(); img.fit = e.target.value; this.changed(false); } }, ...Object.entries(FIT_NAMES).map(([k, n]) => el('option', { value: k }, n)));
+      fit.value = img.fit || 'stretch';
+      box.appendChild(el('div', { class: 'fld2' }, el('label', {}, 'Ajuste'), el('div', { class: 'row nw' }, fit,
+        el('button', { class: 'btn xs' + (img.rot ? ' on' : ''), title: 'Girar a imagem 180°', onclick: () => { this.snapshot(); img.rot = !img.rot; this.changed(false); this.render(); } }, '↻ 180°'))));
+      box.appendChild(el('div', { class: 'fld2' }, el('label', {}, 'BASEs'), el('label', { class: 'row nw', style: { gap: '6px', color: 'var(--ink2)' } },
+        el('input', { type: 'checkbox', checked: !st.map.hideHomes, onchange: (e) => { this.snapshot(); st.map.hideHomes = !e.target.checked; this.changed(false); } }), 'desenhar as BASEs por cima')));
+      box.appendChild(el('div', { class: 'fld2' }, el('label', {}, 'Mesa'), el('div', {},
+        el('button', { class: 'btn xs warn', title: 'Apaga linhas, zonas, modelos e missões, mas mantém a imagem e as BASEs', onclick: async () => {
+          const v = await modal('Mesa limpa com esta imagem', 'Apagar os desenhos, os modelos e as missões atuais e manter só a imagem do tapete (e as BASEs)? Dá para desfazer com Ctrl+Z.', [{ label: 'Cancelar', value: null }, { label: 'Limpar', cls: 'warn', value: 'ok' }]);
+          if (v !== 'ok') return;
+          this.snapshot();
+          const map = Object.assign({}, st.map, { items: st.map.items.filter(i => i.t === 'home'), name: (img.name || 'Mesa').replace(/\.[a-z0-9]+$/i, '') });
+          this.app.loadField({ map, objects: [], missions: [] }, true);
+          toast('Mesa limpa. Agora coloque modelos (ferramenta Objeto) e crie as missões na aba MISSÕES.', 'ok', 4500);
+        } }, 'limpar mesa e manter a imagem'))));
+      if (img.name) box.appendChild(el('p', { class: 'hint mono', style: { margin: '2px 0 0' } }, img.name));
+    }
+    box.appendChild(el('p', { class: 'hint' }, 'Use a foto ou o arquivo do tapete da sua equipe (PNG, JPG ou WebP; pode arrastar o arquivo para cá). A imagem vira o tapete e o sensor de cor lê as cores dela. Depois coloque modelos e zonas de missão por cima, crie as missões e salve tudo em "Mesa + missões (JSON)" para a turma abrir.'));
+    return box;
   }
 
   applyColorToSel(c) {

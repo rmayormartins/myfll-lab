@@ -4,6 +4,7 @@
 //  textura 3D e os dados que o sensor de cor lê no worker.
 // ============================================================================
 import { MAT } from '../common/objects.js';
+import { drawMatImage } from './matimage.js';
 
 export const MAT_S = 1;   // px por mm
 
@@ -22,8 +23,10 @@ export function paintMat(canvas, map, opts = {}) {
   g.save();
   g.fillStyle = map.bg || '#f3f1ea';
   g.fillRect(0, 0, W, H);
+  // imagem de fundo carregada pelo usuário (se houver)
+  const hasImg = drawMatImage(g, W, H, map.img);
   // textura leve de lona impressa (determinística)
-  if (map.texture !== false) {
+  if (map.texture !== false && !hasImg) {
     let s = 1234567;
     const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
     g.globalAlpha = 0.035;
@@ -33,7 +36,7 @@ export function paintMat(canvas, map, opts = {}) {
     }
     g.globalAlpha = 1;
   }
-  for (const it of map.items || []) drawItem(g, it);
+  for (const it of map.items || []) { if (it.t === 'home' && map.hideHomes) continue; drawItem(g, it); }
   // borda impressa
   g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 2;
   g.strokeRect(1, 1, W - 2, H - 2);

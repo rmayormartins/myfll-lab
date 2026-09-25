@@ -256,6 +256,7 @@ input[type=color]{width:28px;height:24px;padding:0;border:1px solid var(--line2)
 .objbtn{border:1px solid var(--line2);background:var(--panel2);border-radius:6px;padding:6px 4px;font-size:11px;color:var(--ink2);display:flex;align-items:center;gap:6px}
 .objbtn i{width:12px;height:12px;border-radius:3px;flex:none}
 .objbtn.on{border-color:var(--cyan);color:var(--cyan)}
+.imgblock{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line2)}
 /* montador */
 .bcanvas{width:100%;height:270px;display:block;border:1px solid var(--line);border-radius:8px;background:#070b10;touch-action:none;cursor:default}
 .presets{display:grid;grid-template-columns:1fr 1fr;gap:5px}

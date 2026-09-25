@@ -16,6 +16,8 @@ O código que você escreve aqui usa **os mesmos módulos, nomes e unidades** do
 
 A tela se ajusta ao seu jeito: arraste as bordas entre os painéis (robô/mesa, vista 3D, hub, console e código) para redimensionar, e a borda de baixo para deixar a área de trabalho mais alta; a página tem rolagem vertical. Duplo clique numa borda volta ao tamanho padrão, e o menu ☰ restaura tudo.
 
+**Tapete da sua equipe:** na aba MESA dá para carregar a foto ou o arquivo do tapete que a equipe usa (PNG, JPG ou WebP). A imagem vira o tapete (o sensor de cor lê as cores dela); depois é só colocar os modelos e criar as missões por cima e salvar em **Mesa + missões (JSON)**, um arquivo único que a turma abre no próprio navegador. O MyFLL.lab não traz os tapetes e missões oficiais das temporadas da FLL, que são material da FIRST e da LEGO; cada equipe usa o seu.
+
 O hub virtual funciona como o real: **◀ ▶** trocam o programa, o botão central executa e para, a matriz 5x5 mostra imagens e textos, e o console embaixo aceita comandos Python soltos (REPL).
 
 ## O que o simulador reproduz

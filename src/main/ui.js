@@ -58,13 +58,14 @@ export function download(name, text, type = 'text/plain') {
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 
-export function pickFile(accept) {
+export function pickFile(accept, raw) {
   return new Promise((res) => {
     const inp = $('#fileIn');
     inp.accept = accept || '';
     inp.value = '';
     inp.onchange = () => {
       const f = inp.files[0]; if (!f) return res(null);
+      if (raw) return res({ name: f.name, file: f });
       const r = new FileReader();
       r.onload = () => res({ name: f.name, text: r.result });
       r.readAsText(f);
